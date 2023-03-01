@@ -1,17 +1,15 @@
 terraform {
-#       backend "remote" {
-#         # The name of your Terraform Cloud organization.
-#         organization = "inzynierka-agh-cyber"
-#
-#         # The name of the Terraform Cloud workspace to store Terraform state files in.
-#         workspaces {
-#           name = "inzynierka-prd"
-#         }
-#       }
-#     }
-#
-#     resource "null_resource" "example" {
-#       triggers = {
-#         value = "A example resource that does nothing!"
-#       }
-#     }
+    backend "remote" {
+        organization = "inzynierka-agh-cyber"
+
+        workspaces {
+            name = "inzynierka-prd"
+        }
+    }
+}
+
+resource "null_resource" "example" {
+    triggers = {
+        value = "A example resource that does nothing!"
+    }
+}
