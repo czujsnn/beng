@@ -1,0 +1,3 @@
+- create semver secret on gha
+- create pat for semver bump
+- 2 separate pipelines? or one after another (semver - > Terraform - > GCP)
