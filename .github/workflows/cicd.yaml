@@ -1,0 +1,70 @@
+name: ci-cd
+on:
+  push:
+    paths:
+      - 'application/**'
+    branches: [ 'disabled_change_to_main' ]
+
+jobs:
+  increment_version:
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v2
+          with:
+            fetch-depth: 0
+
+        - name: Bump release version
+          id: bump_version
+          uses: christian-draeger/increment-semantic-version@1.0.2
+          with:
+            current-version: ${{ secrets.APP_VERSION }}
+            version-fragment: 'bug'
+
+        - name: Update Patch version
+          uses: hmanzur/actions-set-secret@v2.0.0
+          with:
+            name: 'APP_VERSION'
+            value:  ${{ steps.bump_version.outputs.next-version }}
+            repository: czujsnn/beng
+            token: ${{ secrets.REPO_ACCESS_TOKEN }}
+            
+        - name: Bump version and push tag
+          id: tag_version
+          uses: mathieudutour/github-tag-action@v6.0
+          with:
+            github_token: ${{ secrets.GITHUB_TOKEN }}
+            custom_tag: ${{ secrets.APP_VERSION }}
+
+        - name: Create a Github Release
+          uses: "marvinpinto/action-automatic-releases@latest"
+          with:
+            repo_token: "${{ secrets.GITHUB_TOKEN }}"
+            automatic_release_tag: ${{secrets.APP_VERSION}}
+            prerelease: false
+            title: "AGH Lab Framework Version: ${{secrets.APP_VERSION}}"
+
+  gcp_connect_build_push:
+    needs: [increment_version]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./.github/workflows/actions/build_backend
+        id: buildBackend
+      - id: 'auth'
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ secrets.GCP_CREDENTIAL }}' #enter in gha vars, delete after done
+          project_id: ${{secrets.GKE_PROJECT}} #enter in gha vars, delete after done
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v0'
+
+      - name: "auth to GAR"
+        run: |
+          gcloud config set artifacts/repository [NAZWA_NASZEGO_GAR]
+          gcloud config set artifacts/location [LOKACJA_GAR]
+          gcloud auth configure-docker [ADRES_GAR] -q
+
+      - name: Build
+        run: |-
+          docker build --tag [env_name_for_gar_change_later]/${{secrets.GKE_PROJECT}}/[[gar-name]]/[deployment_name]:${{secrets.APP_VERSION}} .
