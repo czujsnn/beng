@@ -43,8 +43,41 @@ jobs:
             prerelease: false
             title: "AGH Lab Framework Version: ${{secrets.APP_VERSION}}"
 
+  terraform:
+      runs-on: ubuntu-latest
+      environment: production #use only one env,delete terraform.yml after init testing of TFCloud
+      needs: [increment_version] #I use order: SemVer bump -> Terraform -> GCP stuff (application Infra). Could be debated to do GCP Build/Push before Terraform. Leaving for now
+
+      defaults:
+        run:
+          shell: bash
+
+      steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+        with:
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Format
+        run: terraform fmt -recursive -check #Added -recursive to fmt whole structure
+
+      - name: Terraform Plan
+        run: terraform plan -input=false
+
+        # On push to "main", build or change infrastructure according to Terraform configuration files
+        # Note: It is recommended to set up a required "strict" status check in your repository for "Terraform Cloud". See the documentation on "strict" required status checks for more information: https://help.github.com/en/github/administering-a-repository/types-of-required-status-checks
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/"main"' && github.event_name == 'push'
+        run: terraform apply -auto-approve -input=false
+
   gcp_connect_build_push:
-    needs: [increment_version]
+    needs: [increment_version,terraform]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -68,3 +101,5 @@ jobs:
       - name: Build
         run: |-
           docker build --tag [env_name_for_gar_change_later]/${{secrets.GKE_PROJECT}}/[[gar-name]]/[deployment_name]:${{secrets.APP_VERSION}} .
+
+
