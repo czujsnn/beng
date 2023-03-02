@@ -1,9 +1,13 @@
 name: ci-cd
 on:
   push:
-    paths:
-      - 'application/**'
+    # paths:
+    #   - 'application/**'
     branches: [ 'main' ]
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   increment_version:
