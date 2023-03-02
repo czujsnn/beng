@@ -25,8 +25,8 @@
     padding: 10px 20px;
   }
 
-  .delete-button{background-color: #c02551;}
-  .create-button{background-color: #4CAF50;}
+  #delete-button{background-color: #c02551;}
+  #create-button{background-color: #4CAF50;margin-bottom: 20px;}
 
   .response {
     margin-top: 20px;
