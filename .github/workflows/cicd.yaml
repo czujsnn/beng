@@ -3,7 +3,7 @@ on:
   push:
     paths:
       - 'application/**'
-    branches: [ 'disabled_change_to_main' ]
+    branches: [ 'main' ]
 
 jobs:
   increment_version:
